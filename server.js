@@ -8,8 +8,10 @@ const bodyParser = require('body-parser');
 
 const app = express();
 
-// Enable CORS for all routes (add any specific options as necessary)
-app.use(cors());
+app.use(cors({
+  origin: ['https://brainstorm-resource-upload.onrender.com'.'https://bstorm-upload.netlify.app'], // Replace with your Next.js app's URL
+  credentials: true, // Enable cookies or authorization headers if needed
+}));
 app.use(bodyParser.json());
 
 // MongoDB connection
