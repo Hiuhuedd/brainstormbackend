@@ -49,23 +49,30 @@ const s3 = new AWS.S3({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// POST endpoint for file upload and saving resource data
+// POST endpoint for file upload and saving resource data// POST endpoint for file upload and saving resource data
 app.post('/upload', upload.single('file'), async (req, res) => {
-  const file = req.file;
-  const resourceData = JSON.parse(req.body.resourceData);
-
-  // Upload PDF to S3
-  const params = {
-    Bucket: process.env.AWS_S3_BUCKET, // Use the bucket name from env file
-    Key: `${Date.now()}_${file.originalname}`,
-    Body: file.buffer,
-    ContentType: file.mimetype,
-  };
-
-  s3.upload(params, async (err, data) => {
-    if (err) {
-      return res.status(500).send(err);
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
     }
+
+    const resourceData = JSON.parse(req.body.resourceData);
+
+    // Validate resource data (add your own validations as needed)
+    if (!resourceData.programCode || !resourceData.unitCode || !resourceData.unitName) {
+      return res.status(400).json({ error: 'Program code, unit code, and unit name are required' });
+    }
+
+    // Upload PDF to S3
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET, // Use the bucket name from env file
+      Key: `${Date.now()}_${file.originalname}`,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    };
+
+    const data = await s3.upload(params).promise(); // Using promise to handle async/await
 
     // Save the file URI and resource data to MongoDB
     const newResource = new Resource({
@@ -75,8 +82,12 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
     await newResource.save();
     res.status(200).json(newResource);
-  });
+  } catch (err) {
+    console.error(err); // Log the error for server-side debugging
+    res.status(500).json({ error: 'An error occurred while processing your request' });
+  }
 });
+
 
 // Start the server
 app.listen(5000, () => {
