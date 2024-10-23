@@ -8,15 +8,15 @@ const bodyParser = require('body-parser');
 
 const app = express();
 
+// Enable CORS for all routes (add any specific options as necessary)
 app.use(cors({
   origin: [
     'https://brainstorm-resource-upload.onrender.com', 
     'https://bstorm-upload.netlify.app' // Corrected comma here
   ],
   credentials: true, // Enable cookies or authorization headers if needed
-}));
-
-app.use(bodyParser.json());
+  
+}));app.use(bodyParser.json());
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -95,6 +95,82 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 
+// GET endpoint to return all resources
+app.get('/resources', async (req, res) => {
+  try {
+    // Fetch all resources from MongoDB
+    const resources = await Resource.find();
+    // Respond with the fetched resources
+    res.status(200).json(resources);
+  } catch (error) {
+    // Log the error for debugging
+    console.error('Error fetching resources:', error);
+    // Respond with a 500 status and error message
+    res.status(500).json({ error: 'Failed to retrieve resources' });
+  }
+});
+
+
+
+
+const userProfileSchema = new mongoose.Schema({
+  userId: { type: String, required: true },
+  email: { type: String, required: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  imgURL: { type: String, required: true },
+  programCode: { type: String, required: true },
+  yearOfStudy: { type: Number, required: true },
+  semester: { type: Number, required: true },
+  isPremium: { type: Boolean, default: false },
+  premiumDate: { type: Date, default: null },
+  premiumPlan: { type: Number, default: 0 },
+});
+
+const UserProfile = mongoose.model('UserProfile', userProfileSchema);
+
+// Route to handle user profile submission
+app.post('/user-profile', async (req, res) => {
+  const {
+    userId,
+    email,
+    firstName,
+    lastName,
+    imgURL,
+    programCode,
+    yearOfStudy,
+    semester,
+    isPremium,
+    premiumDate,
+    premiumPlan,
+  } = req.body;
+
+  try {
+    // Create a new UserProfile instance
+    const newUserProfile = new UserProfile({
+      userId,
+      email,
+      firstName,
+      lastName,
+      imgURL,
+      programCode,
+      yearOfStudy,
+      semester,
+      isPremium,
+      premiumDate,
+      premiumPlan,
+    });
+
+    // Save the profile to MongoDB
+    await newUserProfile.save();
+
+    // Return a success response
+    res.status(201).json({ message: 'Profile saved successfully' });
+  } catch (error) {
+    console.error('Error saving profile:', error);
+    res.status(500).json({ error: 'Failed to save profile' });
+  }
+});
 // Start the server
 app.listen(5000, () => {
   console.log('Server is running on port 5000');
