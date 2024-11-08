@@ -17,9 +17,12 @@ app.use(cors({
   credentials: true, // Enable cookies or authorization headers if needed
   
 }));app.use(bodyParser.json());
-
+const options = {
+  serverSelectionTimeoutMS: 5000,
+  connectTimeoutMS: 10000
+};
 // MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
+mongoose.connect(process.env.MONGO_URI ,{
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
